@@ -9,6 +9,7 @@ import java.util.UUID;
 public interface ExpenseRepository extends JpaRepository<Expense, UUID> {
     List<Expense> findAllByUserIdOrderByDateDesc(UUID userId);
     List<Expense> findAllByUserIdAndDateBetweenOrderByDateDesc(UUID userId, LocalDate start, LocalDate end);
+    List<Expense> findByUser_IdOrderByDateDesc(UUID userId);
     boolean existsByCategoryId(UUID categoryId);
     long countByCategoryId(UUID categoryId);
 }

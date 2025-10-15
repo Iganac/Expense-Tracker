@@ -49,7 +49,7 @@ public class ExpenseService {
     }
 
     public List<Expense> list() {
-        return expenses.findAll(Sort.by(Sort.Direction.DESC, "expenseDate"));
+        return expenses.findAll(Sort.by(Sort.Direction.DESC, "date"));
     }
 
     @Transactional
@@ -76,5 +76,9 @@ public class ExpenseService {
         if (!expenses.existsById(id))
             throw new NotFoundException("Expense not found");
         expenses.deleteById(id);
+    }
+
+    public List<Expense> listByUser(UUID userId) {
+        return expenses.findByUser_IdOrderByDateDesc(userId);
     }
 }

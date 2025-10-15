@@ -5,6 +5,8 @@ import com.expensetracker.backend.exception.NotFoundException;
 import com.expensetracker.backend.model.Role;
 import com.expensetracker.backend.model.User;
 import com.expensetracker.backend.repository.UserRepository;
+
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -62,5 +64,10 @@ public class UserService {
         if (!users.existsById(id))
             throw new NotFoundException("User not found");
         users.deleteById(id);
+    }
+
+    public User findByEmail(String email) {
+        return users.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
     }
 }
