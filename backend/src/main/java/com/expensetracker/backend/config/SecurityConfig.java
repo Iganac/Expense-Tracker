@@ -3,7 +3,6 @@ package com.expensetracker.backend.config;
 import com.expensetracker.backend.security.JwtAuthFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -44,33 +43,24 @@ public class SecurityConfig {
   }
 
   @Bean
-AuthenticationEntryPoint authEntryPoint() {
-  return (req, res, ex) -> res.sendError(HttpStatus.UNAUTHORIZED.value());
-}
+  AuthenticationEntryPoint authEntryPoint() {
+    return (req, res, ex) -> res.sendError(HttpStatus.UNAUTHORIZED.value());
+  }
 
-@Bean
-AccessDeniedHandler accessDeniedHandler() {
-  return (req, res, ex) -> res.sendError(HttpStatus.FORBIDDEN.value());
-}
+  @Bean
+  AccessDeniedHandler accessDeniedHandler() {
+    return (req, res, ex) -> res.sendError(HttpStatus.FORBIDDEN.value());
+  }
 
-@Bean
-public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthFilter jwtFilter) throws Exception {
-  // http.csrf(csrf -> csrf.disable())
-  //    .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-  //    .authorizeHttpRequests(reg -> reg
-  //        .requestMatchers("/api/auth/**", "/api/health").permitAll()
-  //        .anyRequest().authenticated())
-  //    .exceptionHandling(e -> e
-  //        .authenticationEntryPoint(authEntryPoint())
-  //        .accessDeniedHandler(accessDeniedHandler()))
-  //    .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
-     http.csrf(csrf -> csrf.disable())
-    .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-    .authorizeHttpRequests(reg -> reg
-        .requestMatchers("/api/auth/**", "/api/health", "/error").permitAll()  // add /error
-        .anyRequest().authenticated())
-    .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
-  return http.build();
-}
+  @Bean
+  public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthFilter jwtFilter) throws Exception {
+    http.csrf(csrf -> csrf.disable())
+        .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        .authorizeHttpRequests(reg -> reg
+            .requestMatchers("/api/auth/**", "/api/health", "/error").permitAll() // add /error
+            .anyRequest().authenticated())
+        .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+    return http.build();
+  }
 
 }

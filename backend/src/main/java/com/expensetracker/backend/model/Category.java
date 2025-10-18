@@ -23,5 +23,6 @@ public class Category {
 
     @Column(name = "created_at", nullable = false)
     @org.hibernate.annotations.CreationTimestamp
+    @Builder.Default
     private Instant createdAt = Instant.now();
 }

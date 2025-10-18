@@ -36,7 +36,7 @@ public class DemoDataLoader {
                                         .build()));
 
                         // Default/global categories (users can also create more later)
-                        var uncategorized = categoryRepo.findByNameIgnoreCase("Uncategorized")
+                        categoryRepo.findByNameIgnoreCase("Uncategorized")
                                         .orElseGet(() -> categoryRepo.save(Category.builder()
                                                         .name("Uncategorized").description("Fallback category")
                                                         .build()));

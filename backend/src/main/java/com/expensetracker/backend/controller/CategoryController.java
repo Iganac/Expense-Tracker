@@ -7,7 +7,6 @@ import jakarta.validation.Valid;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
 
@@ -15,7 +14,6 @@ import java.util.UUID;
 @RequestMapping("/api/categories")
 public class CategoryController {
     private final CategoryService service;
-    private static final DateTimeFormatter ISO = DateTimeFormatter.ISO_INSTANT;
 
     public CategoryController(CategoryService service) {
         this.service = service;
@@ -50,7 +48,12 @@ public class CategoryController {
     }
 
     private CategoryResponse toRes(Category c) {
-        return new CategoryResponse(c.getId().toString(), c.getName(), c.getDescription(),
-                ISO.format(c.getCreatedAt()));
+        // CategoryResponse: (id, name, description, createdAt as Instant)
+        return new CategoryResponse(
+                c.getId().toString(),
+                c.getName(),
+                c.getDescription(),
+                c.getCreatedAt() // Instant
+        );
     }
 }

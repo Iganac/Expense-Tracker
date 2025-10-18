@@ -1,4 +1,3 @@
-// src/main/java/com/expensetracker/backend/controller/ExpenseController.java
 package com.expensetracker.backend.controller;
 
 import com.expensetracker.backend.controller.dto.ExpenseDtos.CreateExpenseRequest;
@@ -14,7 +13,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
 
@@ -24,7 +22,6 @@ public class ExpenseController {
 
     private final ExpenseService expenseService;
     private final UserService userService;
-    private static final DateTimeFormatter ISO = DateTimeFormatter.ISO_INSTANT;
 
     public ExpenseController(ExpenseService expenseService, UserService userService) {
         this.expenseService = expenseService;
@@ -38,11 +35,11 @@ public class ExpenseController {
 
     @GetMapping
     public ResponseEntity<List<ExpenseResponse>> list(Authentication auth) {
-        // Current user (from JWT set by JwtAuthFilter)
+        // Current user (from JWT set by your security filter)
         String email = auth.getName();
         User user = (User) userService.findByEmail(email);
 
-        // Use existing service.list(), then filter to current user
+        // Prefer service.listByUser(user.getId()) if available; otherwise filter in memory
         List<ExpenseResponse> body = expenseService.list().stream()
                 .filter(e -> e.getUser() != null && user.getId().equals(e.getUser().getId()))
                 .map(this::toRes)
@@ -52,10 +49,14 @@ public class ExpenseController {
     }
 
     @PostMapping
-    public ExpenseResponse create(@Valid @RequestBody CreateExpenseRequest req) {
+    public ExpenseResponse create(@Valid @RequestBody CreateExpenseRequest req, Authentication auth) {
+        // Derive user from auth; do NOT accept userId from client
+        String email = auth.getName();
+        User user = (User) userService.findByEmail(email);
+
         var saved = expenseService.create(
                 req.amount(),
-                UUID.fromString(req.userId()),
+                user.getId(),                              // derived
                 UUID.fromString(req.categoryId()),
                 req.expenseDate(),
                 req.notes()
@@ -64,13 +65,14 @@ public class ExpenseController {
     }
 
     @PutMapping("/{id:[0-9a-fA-F\\-]{36}}")
-    public ExpenseResponse update(@PathVariable UUID id, @Valid @RequestBody UpdateExpenseRequest req) {
+    public ExpenseResponse update(@PathVariable UUID id, @Valid @RequestBody UpdateExpenseRequest req, Authentication auth) {
+        // User cannot be reassigned via client; ignore userId entirely
         var saved = expenseService.update(
                 id,
                 req.amount(),
                 req.notes(),
                 req.expenseDate(),
-                req.userId() != null ? UUID.fromString(req.userId()) : null,
+                null, // userId not changeable via client updates
                 req.categoryId() != null ? UUID.fromString(req.categoryId()) : null
         );
         return toRes(saved);
@@ -83,15 +85,16 @@ public class ExpenseController {
     }
 
     private ExpenseResponse toRes(Expense e) {
+        // ExpenseResponse: (id, userId, categoryId, expenseDate, amount, notes, createdAt, updatedAt)
         return new ExpenseResponse(
                 e.getId().toString(),
                 e.getUser() != null ? e.getUser().getId().toString() : null,
                 e.getCategory() != null ? e.getCategory().getId().toString() : null,
-                e.getDate() != null ? e.getDate().toString() : null,
-                e.getAmount() != null ? e.getAmount().toPlainString() : null,
+                e.getDate(),           // LocalDate
+                e.getAmount(),         // BigDecimal
                 e.getNotes(),
-                e.getCreatedAt() != null ? ISO.format(e.getCreatedAt()) : null,
-                e.getUpdatedAt() != null ? ISO.format(e.getUpdatedAt()) : null
+                e.getCreatedAt(),      // Instant
+                e.getUpdatedAt()       // Instant
         );
     }
 }

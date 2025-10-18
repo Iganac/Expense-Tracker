@@ -11,6 +11,7 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.lang.NonNull;
 
 import java.io.IOException;
 
@@ -25,16 +26,16 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     this.userDetailsService = userDetailsService;
   }
 
-  // src/main/java/com/expensetracker/backend/security/JwtAuthFilter.java
   @Override
-  protected void doFilterInternal(HttpServletRequest request,
-      HttpServletResponse response,
-      FilterChain filterChain) throws ServletException, IOException {
+  protected void doFilterInternal(@NonNull HttpServletRequest request,
+      @NonNull HttpServletResponse response,
+      @NonNull FilterChain filterChain) throws ServletException, IOException {
 
     final String path = request.getRequestURI(); // <-- see which route we’re on
     final String header = request.getHeader("Authorization");
 
-    // (optional) only skip the auth endpoints:
+    // only skip the auth endpoints- login, register - as these dont require
+    // authentication
     if (path.startsWith("/api/auth/")) {
       filterChain.doFilter(request, response);
       return;

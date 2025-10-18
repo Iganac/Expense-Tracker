@@ -1,14 +1,16 @@
 package com.expensetracker.backend.controller;
 
-import com.expensetracker.backend.controller.dto.UserDtos.*;
+import com.expensetracker.backend.controller.dto.UserDtos.AdminCreateUserRequest;
+import com.expensetracker.backend.controller.dto.UserDtos.AdminUpdateUserRequest;
+import com.expensetracker.backend.controller.dto.UserDtos.UserResponse;
 import com.expensetracker.backend.model.Role;
 import com.expensetracker.backend.model.User;
 import com.expensetracker.backend.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.http.*;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
 
@@ -16,16 +18,21 @@ import java.util.UUID;
 @RequestMapping("/api/users")
 public class UserController {
     private final UserService service;
-    private static final DateTimeFormatter ISO = DateTimeFormatter.ISO_INSTANT;
+    private final PasswordEncoder encoder;
 
-    public UserController(UserService service) {
+    public UserController(UserService service, PasswordEncoder encoder) {
         this.service = service;
+        this.encoder = encoder;
     }
 
+    // Consider securing this controller with admin-only access via Spring Security
+    // config
+
     @PostMapping
-    public ResponseEntity<UserResponse> create(@Valid @RequestBody CreateUserRequest req) {
+    public ResponseEntity<UserResponse> create(@Valid @RequestBody AdminCreateUserRequest req) {
         var role = Role.valueOf(req.role().toUpperCase());
-        var saved = service.create(req.email(), req.passwordHash(), role);
+        var passwordHash = encoder.encode(req.password());
+        var saved = service.create(req.email(), passwordHash, role);
         return ResponseEntity.status(HttpStatus.CREATED).body(toRes(saved));
     }
 
@@ -40,9 +47,10 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
-    public UserResponse update(@PathVariable UUID id, @Valid @RequestBody UpdateUserRequest req) {
+    public UserResponse update(@PathVariable UUID id, @Valid @RequestBody AdminUpdateUserRequest req) {
         Role role = req.role() != null ? Role.valueOf(req.role().toUpperCase()) : null;
-        var saved = service.update(id, req.email(), req.passwordHash(), role);
+        String passwordHash = req.password() != null ? encoder.encode(req.password()) : null;
+        var saved = service.update(id, req.email(), passwordHash, role);
         return toRes(saved);
     }
 
@@ -53,6 +61,7 @@ public class UserController {
     }
 
     private UserResponse toRes(User u) {
-        return new UserResponse(u.getId().toString(), u.getEmail(), u.getRole().name(), ISO.format(u.getCreatedAt()));
+        // UserResponse: (id, email, role)
+        return new UserResponse(u.getId().toString(), u.getEmail(), u.getRole().name());
     }
 }
