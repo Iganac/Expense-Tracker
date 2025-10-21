@@ -1,0 +1,6 @@
+:root{--border:#e5e7eb;--primary:#4f46e5;--ring:#c7d2fe;--radius:12px;}
+.btn{padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:#fff;cursor:pointer}
+.btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+.input,.select{padding:8px 10px;border:1px solid var(--border);border-radius:10px;outline:none}
+.input:focus,.select:focus{border-color:var(--primary);box-shadow:0 0 0 3px var(--ring)}
+.card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:16px}
