@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useExpenses } from "../state/ExpensesContext";
 
-export default function ExpenseCard({ expense, onDelete, onSave }){
+export default function ExpenseCard({ expense, onDelete, onSave }) {
   const { state } = useExpenses();
   const cat = state.categories.find(c => c.id === expense.categoryId);
   const categoryName = cat ? cat.name : expense.categoryId;
@@ -29,34 +29,38 @@ export default function ExpenseCard({ expense, onDelete, onSave }){
 
   if (editing) {
     return (
-      <div style={{border:"1px solid #eee",borderRadius:12,padding:12,display:"grid",gap:8}}>
-        {error && <div style={{color:"crimson",fontSize:12}}>{error}</div>}
+      <div style={{ border: "1px solid #eee", borderRadius: 12, padding: 12, display: "grid", gap: 8 }}>
+        {error && <div style={{ color: "crimson", fontSize: 12 }}>{error}</div>}
         <input name="notes" value={form.notes} onChange={onChange} />
         <input name="amount" type="number" step="0.01" value={form.amount} onChange={onChange} />
         <select name="categoryId" value={form.categoryId} onChange={onChange}>
           {state.categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
         <input name="expenseDate" type="date" value={form.expenseDate} onChange={onChange} />
-        <div style={{display:"flex",gap:8}}>
+        <div style={{ display: "flex", gap: 8 }}>
           <button onClick={save}>Save</button>
-          <button onClick={()=>{ setEditing(false); setError(""); }}>Cancel</button>
+          <button onClick={() => { setEditing(false); setError(""); }}>Cancel</button>
         </div>
       </div>
     );
   }
 
   return (
-    <div style={{border:"1px solid #eee",borderRadius:12,padding:12,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+    <div style={{ border: "1px solid #eee", borderRadius: 12, padding: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
       <div>
-        <div style={{fontWeight:600}}>{expense.notes || "(no notes)"}</div>
-        <div style={{fontSize:12,color:"#666"}}>
+        <div style={{ fontWeight: 600 }}>{expense.notes || "(no notes)"}</div>
+        <div style={{ fontSize: 12, color: "#666" }}>
           {categoryName} • {new Date(expense.expenseDate).toLocaleDateString()}
         </div>
       </div>
-      <div style={{display:"flex",gap:8,alignItems:"center"}}>
-        <div style={{fontWeight:700}}>${Number(expense.amount).toFixed(2)}</div>
-        <button onClick={()=>setEditing(true)}>Edit</button>
-        <button onClick={onDelete}>Delete</button>
+      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <div style={{ fontWeight: 700 }}>${Number(expense.amount).toFixed(2)}</div>
+        <button onClick={() => setEditing(true)}>Edit</button>
+        <button onClick={() => {
+          if (window.confirm("Are you sure you want to delete this expense?")) {
+            onDelete();
+          }
+        }}>Delete</button>
       </div>
     </div>
   );
