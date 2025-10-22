@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Navbar from "./components/Navbar";
+import NavBar from "./components/NavBar";
 import HomePage from "./pages/HomePage";
 import ExpensesPage from "./pages/ExpensesPage";
 import ReportsPage from "./pages/ReportsPage";
@@ -14,7 +14,7 @@ export default function App() {
     <AuthProvider>
       <ExpensesProvider>
         <BrowserRouter>
-          <Navbar />
+          <NavBar />
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />

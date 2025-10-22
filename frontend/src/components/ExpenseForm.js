@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
 import { useExpenses } from "../state/ExpensesContext";
-import Input from "./ui/Input";
-import Select from "./ui/Select";
-import Button from "./ui/Button";
-import Card from "./ui/Card";
+import Input from "./Input";
+import Select from "./Select";
+import Button from "./Button";
+import Card from "./Card";
 
 export default function ExpenseForm() {
   const { state, createExpense } = useExpenses();
@@ -75,4 +75,3 @@ export default function ExpenseForm() {
     </Card>
   );
 }
-{error && <ErrorBanner msg={error} />}

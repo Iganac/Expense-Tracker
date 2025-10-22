@@ -3,7 +3,7 @@ import { useExpenses } from "../state/ExpensesContext";
 import ExpenseCard from "../components/ExpenseCard";
 import ExpenseForm from "../components/ExpenseForm";
 import FilterBar from "../components/FilterBar";
-import Card from "../components/ui/Card";
+import Card from "../components/Card";
 import Loading from "../components/feedback/Loading";
 import Empty from "../components/feedback/Empty";
 import ErrorBanner from "../components/feedback/ErrorBanner";

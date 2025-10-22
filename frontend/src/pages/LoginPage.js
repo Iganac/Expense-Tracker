@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useAuth } from "../state/AuthContext";
-import Card from "../components/ui/Card";
-import Input from "../components/ui/Input";
-import Button from "../components/ui/Button";
+import Card from "../components/Card";
+import Input from "../components/Input";
+import Button from "../components/Button";
 import ErrorBanner from "../components/feedback/ErrorBanner";
 
 export default function LoginPage() {

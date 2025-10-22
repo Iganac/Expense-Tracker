@@ -1,6 +1,6 @@
 import { useAuth } from "../state/AuthContext";
-import Card from "../components/ui/Card";
-import Button from "../components/ui/Button";
+import Card from "../components/Card";
+import Button from "../components/Button";
 import { Link } from "react-router-dom";
 
 export default function HomePage() {

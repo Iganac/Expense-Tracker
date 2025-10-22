@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useExpenses } from "../state/ExpensesContext";
-import Card from "../components/ui/Card";
+import Card from "../components/Card";
 import Loading from "../components/feedback/Loading";
 import Empty from "../components/feedback/Empty";
 import ErrorBanner from "../components/feedback/ErrorBanner";
