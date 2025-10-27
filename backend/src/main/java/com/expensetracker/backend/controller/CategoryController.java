@@ -48,12 +48,11 @@ public class CategoryController {
     }
 
     private CategoryResponse toRes(Category c) {
-        // CategoryResponse: (id, name, description, createdAt as Instant)
         return new CategoryResponse(
                 c.getId().toString(),
                 c.getName(),
                 c.getDescription(),
-                c.getCreatedAt() // Instant
+                c.getCreatedAt()
         );
     }
 }

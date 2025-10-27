@@ -1,13 +1,11 @@
 import { fetchJson } from "../api";
 
-// GET all expenses for the logged-in user
+
 export function listExpensesApi() {
   return fetchJson("/api/expenses", { auth: true });
 }
 
-// POST create an expense
 export function createExpenseApi(expense) {
-  // expense: { amount, notes, expenseDate, categoryId }
   return fetchJson("/api/expenses", {
     method: "POST",
     body: expense,
@@ -15,9 +13,21 @@ export function createExpenseApi(expense) {
   });
 }
 
-// GET categories (UUID ids)
 export function listCategoriesApi() {
   return fetchJson("/api/categories", { auth: true });
 }
 
-// (PUT & DELETE TBD)
+export function updateExpenseApi(id, updates) {
+  return fetchJson(`/api/expenses/${id}`, {
+    method: "PUT",
+    body: updates,
+    auth: true,
+  });
+}
+
+export function deleteExpenseApi(id) {
+  return fetchJson(`/api/expenses/${id}`, {
+    method: "DELETE",
+    auth: true,
+  });
+}

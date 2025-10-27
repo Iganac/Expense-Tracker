@@ -12,7 +12,7 @@ export default function ExpenseForm() {
   const [form, setForm] = useState({
     notes: "",
     amount: "",
-    categoryId: "",   // UUID from backend
+    categoryId: "",
     expenseDate: today,
   });
   const [error, setError] = useState("");

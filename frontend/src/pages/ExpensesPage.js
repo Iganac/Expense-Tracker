@@ -71,6 +71,8 @@ export default function ExpensesPage() {
             expense={e}
             onDelete={() => removeExpense(e.id)}
             onSave={(updates) => saveExpense(e.id, updates)}
+            categoryName={nameById.get(e.categoryId) || "—"}
+            categories={categories}
           />
         ))}
       </div>
