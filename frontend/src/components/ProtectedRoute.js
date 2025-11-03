@@ -3,8 +3,14 @@ import { useAuth } from "../state/AuthContext";
 import Loading from "./feedback/Loading";
 
 export default function ProtectedRoute({ children }) {
-  const { token, loading } = useAuth();
-  if (loading) return <div style={{ padding: 16 }}><Loading text="Loading..." /></div>;
-  if (!token) return <Navigate to="/login" replace />;
+  const { user, loading } = useAuth();
+  if (loading) {
+    return (
+      <div style={{ padding: 16 }}>
+        <Loading text="Loading..." />
+      </div>
+    );
+  }
+  if (!user) return <Navigate to="/login" replace />;
   return children;
 }

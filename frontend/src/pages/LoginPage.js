@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "../state/AuthContext";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import Card from "../components/Card";
 import Input from "../components/Input";
 import Button from "../components/Button";
@@ -7,6 +8,8 @@ import ErrorBanner from "../components/feedback/ErrorBanner";
 
 export default function LoginPage() {
   const { login } = useAuth();
+  const nav = useNavigate();
+  const loc = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -16,9 +19,11 @@ export default function LoginPage() {
     e.preventDefault();
     setErr(""); setBusy(true);
     try {
-      await login(email, password);
-    } catch {
-      setErr("Invalid email or password.");
+      await login({ email, password });
+      const next = loc.state?.from || "/";
+      nav(next, { replace: true });
+    } catch (ex) {
+      setErr(ex?.message || "Invalid email or password.");
     } finally {
       setBusy(false);
     }
@@ -53,6 +58,12 @@ export default function LoginPage() {
             {busy ? "Signing in…" : "Login"}
           </Button>
         </form>
+
+        {/* --- Add this small footer --- */}
+        <div style={{ marginTop: 12, fontSize: 14 }}>
+          Don’t have an account?{" "}
+          <Link to="/register">Create one</Link>
+        </div>
       </Card>
     </div>
   );

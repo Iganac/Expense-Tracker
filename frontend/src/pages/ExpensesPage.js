@@ -13,7 +13,7 @@ export default function ExpensesPage() {
     expenses, categories,
     loadingExpenses, loadingCategories,
     errorExpenses, errorCategories,
-    saveExpense, removeExpense
+    saveExpense, removeExpense, createExpense,
   } = useExpenses();
 
   const [categoryId, setCategoryId] = useState("All");
@@ -24,25 +24,32 @@ export default function ExpensesPage() {
     if (categoryId !== "All") arr = arr.filter(e => e.categoryId === categoryId);
     switch (sortBy) {
       case "amountDesc": arr.sort((a, b) => Number(b.amount) - Number(a.amount)); break;
-      case "amountAsc": arr.sort((a, b) => Number(a.amount) - Number(b.amount)); break;
-      default: arr.sort((a, b) => new Date(b.expenseDate) - new Date(a.expenseDate));
+      case "amountAsc":  arr.sort((a, b) => Number(a.amount) - Number(b.amount)); break;
+      default:           arr.sort((a, b) => new Date(b.expenseDate) - new Date(a.expenseDate));
     }
     return arr;
   }, [expenses, categoryId, sortBy]);
 
-  const total = useMemo(() => expenses.reduce((s, e) => s + Number(e.amount || 0), 0), [expenses]);
-  const nameById = useMemo(() => new Map(categories.map(c => [c.id, c.name])), [categories]);
+  const total = useMemo(
+    () => expenses.reduce((s, e) => s + Number(e.amount || 0), 0),
+    [expenses]
+  );
+  const nameById = useMemo(
+    () => new Map(categories.map(c => [c.id, c.name])),
+    [categories]
+  );
 
   return (
     <div style={{ padding: 16 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
         <h2 style={{ margin: 0 }}>Expenses</h2>
-        <span style={{ border: "1px solid #e5e7eb", borderRadius: 999, padding: "4px 10px" }}>Total ${total.toFixed(2)}</span>
+        <span style={{ border: "1px solid #e5e7eb", borderRadius: 999, padding: "4px 10px" }}>
+          Total ${total.toFixed(2)}
+        </span>
       </div>
 
-      {/* categories filter bar */}
       <Card>
-        {(loadingCategories) && <Loading text="Loading categories..." />}
+        {loadingCategories && <Loading text="Loading categories..." />}
         <ErrorBanner msg={errorCategories} />
         <FilterBar
           categoryId={categoryId}
@@ -53,12 +60,11 @@ export default function ExpensesPage() {
         />
       </Card>
 
-      {/* form */}
       <div style={{ marginTop: 12 }}>
-        <ExpenseForm />
+        {/* Ensure the form calls createExpense from context */}
+        <ExpenseForm onSubmit={createExpense} />
       </div>
 
-      {/* list */}
       <div style={{ display: "grid", gap: 12, marginTop: 12 }}>
         {loadingExpenses && <Loading text="Loading expenses..." />}
         {!loadingExpenses && !!errorExpenses && <ErrorBanner msg={errorExpenses} />}

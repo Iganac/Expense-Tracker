@@ -12,12 +12,17 @@ export function AuthProvider({ children }) {
     setOnUnauthorized(() => {
       clearToken();
       setUser(null);
-      window.location.assign("/login");
     });
   }, []);
 
   useEffect(() => {
     (async () => {
+      const token = getToken();
+      if (!token) {
+        setUser(null);
+        setLoading(false);
+        return;
+      }
       try {
         const me = await meApi();
         setUser(me);
@@ -33,10 +38,14 @@ export function AuthProvider({ children }) {
     await loginApi({ email, password });
     const me = await meApi();
     setUser(me);
+    return me;
   }
 
-  async function register({ name, email, password }) {
-    await registerApi({ name, email, password });
+  async function register({ email, password }) {
+    await registerApi({ email, password });
+    const me = await meApi();
+    setUser(me);
+    return me;
   }
 
   function logout() {
@@ -44,9 +53,7 @@ export function AuthProvider({ children }) {
     setUser(null);
   }
 
-  const token = getToken();
-
-  const api = { user, token, loading, login, register, logout };
+  const api = { user, loading, login, register, logout };
   return <AuthContext.Provider value={api}>{children}</AuthContext.Provider>;
 }
 

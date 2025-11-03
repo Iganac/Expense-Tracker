@@ -33,8 +33,7 @@ public class AuthController {
       AuthenticationManager authManager,
       UserService userService,
       PasswordEncoder encoder,
-      JwtService jwtService
-  ) {
+      JwtService jwtService) {
     this.authManager = authManager;
     this.userService = userService;
     this.encoder = encoder;
@@ -60,8 +59,7 @@ public class AuthController {
     var token = jwtService.generateToken(
         saved.getEmail(),
         saved.getId().toString(),
-        saved.getRole().name()
-    );
+        saved.getRole().name());
 
     return ResponseEntity
         .created(URI.create("/api/auth/me"))
@@ -78,14 +76,16 @@ public class AuthController {
     var token = jwtService.generateToken(
         user.getEmail(),
         user.getId().toString(),
-        user.getRole().name()
-    );
+        user.getRole().name());
 
     return ResponseEntity.ok(new AuthResponse(token));
   }
 
   @GetMapping("/me")
   public ResponseEntity<MeResponse> me(Authentication auth) {
+    if (auth == null || !auth.isAuthenticated()) {
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    }
     var user = (User) userService.findByEmail(auth.getName());
     var body = new MeResponse(user.getId().toString(), user.getEmail(), user.getRole().name());
     return ResponseEntity.ok(body);

@@ -16,7 +16,7 @@ export function setOnUnauthorized(cb) {
 }
 
 export async function fetchJson(path, opts = {}) {
-  const base = process.env.REACT_APP_API_BASE;
+  const base = process.env.REACT_APP_API_BASE || "";
   const headers = { Accept: "application/json", ...(opts.headers || {}) };
   if (opts.body) headers["Content-Type"] = "application/json";
   if (opts.auth) {
@@ -28,7 +28,7 @@ export async function fetchJson(path, opts = {}) {
     ...opts,
     headers,
     body: opts.body ? JSON.stringify(opts.body) : undefined,
-    signal: opts.signal, // allow passing AbortSignal
+    signal: opts.signal,
   });
 
   const text = await res.text();
@@ -36,7 +36,6 @@ export async function fetchJson(path, opts = {}) {
   try { data = text ? JSON.parse(text) : null; } catch { data = text; }
 
   if (!res.ok) {
-    // Trigger auto-logout
     if (res.status === 401 && typeof onUnauthorized === "function") {
       try { onUnauthorized(); } catch { }
     }
