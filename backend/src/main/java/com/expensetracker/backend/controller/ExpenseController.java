@@ -35,7 +35,6 @@ public class ExpenseController {
 
     @GetMapping
     public ResponseEntity<List<ExpenseResponse>> list(Authentication auth) {
-        // Current user (from JWT set by your security filter)
         String email = auth.getName();
         User user = (User) userService.findByEmail(email);
 
@@ -50,13 +49,13 @@ public class ExpenseController {
 
     @PostMapping
     public ExpenseResponse create(@Valid @RequestBody CreateExpenseRequest req, Authentication auth) {
-        // Derive user from auth; do NOT accept userId from client
+        // Derive user from auth
         String email = auth.getName();
         User user = (User) userService.findByEmail(email);
 
         var saved = expenseService.create(
                 req.amount(),
-                user.getId(),                              // derived
+                user.getId(),
                 UUID.fromString(req.categoryId()),
                 req.expenseDate(),
                 req.notes()
@@ -72,7 +71,7 @@ public class ExpenseController {
                 req.amount(),
                 req.notes(),
                 req.expenseDate(),
-                null, // userId not changeable via client updates
+                null, 
                 req.categoryId() != null ? UUID.fromString(req.categoryId()) : null
         );
         return toRes(saved);

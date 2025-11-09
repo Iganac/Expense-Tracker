@@ -25,8 +25,6 @@ public class UserController {
         this.encoder = encoder;
     }
 
-    // Consider securing this controller with admin-only access via Spring Security
-    // config
 
     @PostMapping
     public ResponseEntity<UserResponse> create(@Valid @RequestBody AdminCreateUserRequest req) {
