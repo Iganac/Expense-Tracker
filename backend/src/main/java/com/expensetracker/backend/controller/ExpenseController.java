@@ -2,17 +2,21 @@ package com.expensetracker.backend.controller;
 
 import com.expensetracker.backend.controller.dto.ExpenseDtos.CreateExpenseRequest;
 import com.expensetracker.backend.controller.dto.ExpenseDtos.UpdateExpenseRequest;
+import com.expensetracker.backend.controller.dto.SliceResponse;
 import com.expensetracker.backend.controller.dto.ExpenseDtos.ExpenseResponse;
 import com.expensetracker.backend.model.Expense;
 import com.expensetracker.backend.model.User;
 import com.expensetracker.backend.service.ExpenseService;
 import com.expensetracker.backend.service.UserService;
 import jakarta.validation.Valid;
+
+import org.springframework.data.domain.Slice;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -38,13 +42,36 @@ public class ExpenseController {
         String email = auth.getName();
         User user = (User) userService.findByEmail(email);
 
-        // Prefer service.listByUser(user.getId()) if available; otherwise filter in memory
+        // Prefer service.listByUser(user.getId()) if available; otherwise filter in
+        // memory
         List<ExpenseResponse> body = expenseService.list().stream()
                 .filter(e -> e.getUser() != null && user.getId().equals(e.getUser().getId()))
                 .map(this::toRes)
                 .toList();
 
         return ResponseEntity.ok(body);
+    }
+
+    @GetMapping("/search")
+    public SliceResponse<ExpenseResponse> search(
+            Authentication auth,
+            @RequestParam(required = false) String start,
+            @RequestParam(required = false) String end,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        String email = auth.getName();
+        User user = (User) userService.findByEmail(email);
+
+        LocalDate s = start != null && !start.isBlank() ? LocalDate.parse(start) : null;
+        LocalDate e = end != null && !end.isBlank() ? LocalDate.parse(end) : null;
+
+        Slice<Expense> slice = expenseService.search(user.getId(), s, e, page, size);
+
+        return new SliceResponse<>(
+                slice.getContent().stream().map(this::toRes).toList(),
+                slice.hasNext(),
+                slice.getNumber(),
+                slice.getSize());
     }
 
     @PostMapping
@@ -58,22 +85,21 @@ public class ExpenseController {
                 user.getId(),
                 UUID.fromString(req.categoryId()),
                 req.expenseDate(),
-                req.notes()
-        );
+                req.notes());
         return toRes(saved);
     }
 
     @PutMapping("/{id:[0-9a-fA-F\\-]{36}}")
-    public ExpenseResponse update(@PathVariable UUID id, @Valid @RequestBody UpdateExpenseRequest req, Authentication auth) {
+    public ExpenseResponse update(@PathVariable UUID id, @Valid @RequestBody UpdateExpenseRequest req,
+            Authentication auth) {
         // User cannot be reassigned via client; ignore userId entirely
         var saved = expenseService.update(
                 id,
                 req.amount(),
                 req.notes(),
                 req.expenseDate(),
-                null, 
-                req.categoryId() != null ? UUID.fromString(req.categoryId()) : null
-        );
+                null,
+                req.categoryId() != null ? UUID.fromString(req.categoryId()) : null);
         return toRes(saved);
     }
 
@@ -84,16 +110,17 @@ public class ExpenseController {
     }
 
     private ExpenseResponse toRes(Expense e) {
-        // ExpenseResponse: (id, userId, categoryId, expenseDate, amount, notes, createdAt, updatedAt)
+        // ExpenseResponse: (id, userId, categoryId, expenseDate, amount, notes,
+        // createdAt, updatedAt)
         return new ExpenseResponse(
                 e.getId().toString(),
                 e.getUser() != null ? e.getUser().getId().toString() : null,
                 e.getCategory() != null ? e.getCategory().getId().toString() : null,
-                e.getDate(),           // LocalDate
-                e.getAmount(),         // BigDecimal
+                e.getDate(), // LocalDate
+                e.getAmount(), // BigDecimal
                 e.getNotes(),
-                e.getCreatedAt(),      // Instant
-                e.getUpdatedAt()       // Instant
+                e.getCreatedAt(), // Instant
+                e.getUpdatedAt() // Instant
         );
     }
 }

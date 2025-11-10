@@ -1,67 +1,197 @@
-import { useMemo } from "react";
+// src/pages/ReportsPage.jsx
+import { useEffect, useMemo, useState } from "react";
 import { useExpenses } from "../state/ExpensesContext";
+import { searchExpensesApi } from "../state/expensesApi";
 import Card from "../components/Card";
 import Loading from "../components/feedback/Loading";
 import Empty from "../components/feedback/Empty";
 import ErrorBanner from "../components/feedback/ErrorBanner";
+import Input from "../components/Input";
+import Select from "../components/Select";
+
+// Recharts
+import {
+  PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer,
+} from "recharts";
+
+function fmtMoney(n) {
+  return new Intl.NumberFormat(undefined, { style: "currency", currency: "USD" }).format(n || 0);
+}
+
+function startEndFor(dateStr, mode) {
+  const d = new Date(dateStr + "T00:00:00");
+  if (mode === "day") {
+    const s = dateStr;
+    const e = dateStr;
+    return { start: s, end: e, label: d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }) };
+  }
+  if (mode === "month") {
+    const y = d.getUTCFullYear();
+    const m = d.getUTCMonth(); // 0..11
+    const first = new Date(Date.UTC(y, m, 1));
+    const last = new Date(Date.UTC(y, m + 1, 0));
+    const s = first.toISOString().slice(0, 10);
+    const e = last.toISOString().slice(0, 10);
+    const label = first.toLocaleDateString(undefined, { year: "numeric", month: "short" });
+    return { start: s, end: e, label };
+  }
+  // year
+  const y = d.getUTCFullYear();
+  const first = new Date(Date.UTC(y, 0, 1));
+  const last = new Date(Date.UTC(y, 11, 31));
+  return {
+    start: first.toISOString().slice(0, 10),
+    end: last.toISOString().slice(0, 10),
+    label: String(y),
+  };
+}
+
+const COLORS = [
+  "#4F46E5", "#059669", "#EF4444", "#F59E0B", "#06B6D4",
+  "#8B5CF6", "#10B981", "#E11D48", "#84CC16", "#14B8A6",
+  "#F97316", "#22C55E", "#A855F7", "#3B82F6", "#D946EF",
+];
 
 export default function ReportsPage() {
-  const {
-    expenses, categories,
-    loadingExpenses, loadingCategories,
-    errorExpenses, errorCategories
-  } = useExpenses();
+  // We still use categories to label slices, but we DO NOT use global expenses here
+  const { categories, loadingCategories, errorCategories } = useExpenses();
 
-  const total = useMemo(
-    () => expenses.reduce((s, e) => s + Number(e.amount || 0), 0),
-    [expenses]
-  );
+  const [mode, setMode] = useState("month"); // "day" | "month" | "year"
+  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [rows, setRows] = useState([]); // local fetched expenses for the selected range
 
-  const byCategory = useMemo(() => {
-    const map = {};
-    for (const e of expenses) {
-      const k = e.categoryId;
-      map[k] = (map[k] || 0) + Number(e.amount || 0);
+  // fetch all slices for the selected range
+  useEffect(() => {
+    let aborted = false;
+    async function run() {
+      setLoading(true);
+      setError("");
+      try {
+        const { start, end } = startEndFor(date, mode);
+        let page = 0;
+        const size = 200; // big page to minimize roundtrips
+        const acc = [];
+        // load until 'last' page
+        // (your backend returns { last: boolean } or we infer from returned size)
+        // We coded to use 'last' in other places; keep that behavior:
+        // searchExpensesApi returns { content, last }
+        // If you don't have 'last', stop when content length < size.
+        /* eslint-disable no-constant-condition */
+        while (true) {
+          const res = await searchExpensesApi({ start, end, page, size });
+          const chunk = Array.isArray(res.content) ? res.content : [];
+          acc.push(...chunk);
+          if (res.last || chunk.length < size) break;
+          page += 1;
+        }
+        if (!aborted) setRows(acc);
+      } catch (e) {
+        if (!aborted) setError(e?.message || "Failed to load reports data");
+      } finally {
+        if (!aborted) setLoading(false);
+      }
     }
-    return map;
-  }, [expenses]);
+    run();
+    return () => { aborted = true; };
+  }, [date, mode]);
 
   const nameById = useMemo(
     () => new Map(categories.map(c => [c.id, c.name])),
     [categories]
   );
 
-  const entries = Object.entries(byCategory).sort((a, b) => b[1] - a[1]);
+  // aggregate for the selected range
+  const total = useMemo(
+    () => rows.reduce((s, e) => s + Number(e.amount || 0), 0),
+    [rows]
+  );
+
+  const byCategory = useMemo(() => {
+    const map = new Map();
+    for (const e of rows) {
+      const k = e.categoryId || "—";
+      map.set(k, (map.get(k) || 0) + Number(e.amount || 0));
+    }
+    // turn into array sorted desc
+    return [...map.entries()]
+      .map(([cid, v]) => ({ cid, value: v, name: nameById.get(cid) || "—" }))
+      .sort((a, b) => b.value - a.value);
+  }, [rows, nameById]);
+
+  const { label } = startEndFor(date, mode);
 
   return (
     <div style={{ padding: 16 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h2>Reports</h2>
-        <span style={{ border: "1px solid #e5e7eb", borderRadius: 999, padding: "4px 10px" }}>
-          Total ${total.toFixed(2)}
+      <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+        <h2 style={{ margin: 0 }}>Reports</h2>
+
+        <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ opacity: .8 }}>Date</span>
+          <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+        </label>
+
+        <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ opacity: .8 }}>Range</span>
+          <Select value={mode} onChange={(e) => setMode(e.target.value)}>
+            <option value="day">Day</option>
+            <option value="month">Month</option>
+            <option value="year">Year</option>
+          </Select>
+        </label>
+
+        <span style={{ marginLeft: "auto", border: "1px solid #e5e7eb", borderRadius: 999, padding: "4px 10px" }}>
+          Total {fmtMoney(total)}
         </span>
       </div>
 
-      {(loadingCategories || loadingExpenses) && <Loading text="Loading data..." />}
+      {(loadingCategories || loading) && <Loading text="Loading data..." />}
       {!loadingCategories && errorCategories && <ErrorBanner msg={errorCategories} />}
-      {!loadingExpenses && errorExpenses && <ErrorBanner msg={errorExpenses} />}
+      {!loading && !!error && <ErrorBanner msg={error} />}
 
       <Card style={{ marginTop: 12 }}>
-        <h3 style={{ marginTop: 0 }}>By Category</h3>
-        {entries.length === 0 ? (
+        <h3 style={{ marginTop: 0 }}>{label} by category</h3>
+        {byCategory.length === 0 ? (
           <Empty text="No data yet." />
         ) : (
-          <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-            {entries.map(([cid, v]) => (
-              <li
-                key={cid}
-                style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid #f3f4f6" }}
-              >
-                <span>{nameById.get(cid) || cid}</span>
-                <strong>${v.toFixed(2)}</strong>
-              </li>
-            ))}
-          </ul>
+          <>
+            {/* Pie */}
+            <div style={{ width: "100%", height: 320 }}>
+              <ResponsiveContainer>
+                <PieChart>
+                  <Pie
+                    data={byCategory}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={110}
+                    label={(d) => `${d.name}: ${(d.value / (total || 1) * 100).toFixed(0)}%`}
+                  >
+                    {byCategory.map((entry, idx) => (
+                      <Cell key={entry.cid} fill={COLORS[idx % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(v, _n, p) => [fmtMoney(v), p?.payload?.name]} />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* By-category list (kept in sync with the same range) */}
+            <ul style={{ listStyle: "none", padding: 0, margin: "12px 0 0" }}>
+              {byCategory.map((row) => (
+                <li
+                  key={row.cid}
+                  style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid #f3f4f6" }}
+                >
+                  <span>{row.name}</span>
+                  <strong>{fmtMoney(row.value)}</strong>
+                </li>
+              ))}
+            </ul>
+          </>
         )}
       </Card>
     </div>

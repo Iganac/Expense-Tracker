@@ -31,3 +31,12 @@ export function deleteExpenseApi(id) {
     auth: true,
   });
 }
+
+export function searchExpensesApi({ start, end, page = 0, size = 20 }) {
+  const qs = new URLSearchParams();
+  if (start) qs.set("start", start);
+  if (end) qs.set("end", end);
+  qs.set("page", String(page));
+  qs.set("size", String(size));
+  return fetchJson(`/api/expenses/search?${qs.toString()}`, { auth: true });
+}

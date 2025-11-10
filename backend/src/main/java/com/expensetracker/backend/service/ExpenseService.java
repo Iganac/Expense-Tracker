@@ -7,6 +7,10 @@ import com.expensetracker.backend.model.User;
 import com.expensetracker.backend.repository.CategoryRepository;
 import com.expensetracker.backend.repository.ExpenseRepository;
 import com.expensetracker.backend.repository.UserRepository;
+
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -80,5 +84,25 @@ public class ExpenseService {
 
     public List<Expense> listByUser(UUID userId) {
         return expenses.findByUser_IdOrderByDateDesc(userId);
+    }
+
+    public Slice<Expense> search(UUID userId, LocalDate start, LocalDate end, Integer page, Integer size) {
+        int p = page == null ? 0 : Math.max(0, page);
+        int s = size == null ? 20 : Math.max(1, Math.min(size, 100));
+
+        // date desc is the primary ordering for "latest first"
+        Sort sort = Sort.by(Sort.Direction.DESC, "date").and(Sort.by(Sort.Direction.DESC, "id"));
+        Pageable pageable = PageRequest.of(p, s, sort);
+
+        if (start != null && end != null) {
+            if (start.isEqual(end)) {
+                // single-day view (for your date picker)
+                return expenses.findByUser_IdAndDateOrderByDateDesc(userId, start, pageable);
+            }
+            return expenses.findByUser_IdAndDateBetweenOrderByDateDesc(userId, start, end, pageable);
+        }
+
+        // no dates provided → "latest N" with Load More
+        return expenses.findByUser_IdOrderByDateDesc(userId, pageable);
     }
 }
