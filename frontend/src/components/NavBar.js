@@ -28,9 +28,6 @@ export default function Navbar() {
         background: "#fff",
       }}
     >
-      <NavLink to="/" style={linkStyle}>
-        Home
-      </NavLink>
       <NavLink to="/expenses" style={linkStyle}>
         Expenses
       </NavLink>

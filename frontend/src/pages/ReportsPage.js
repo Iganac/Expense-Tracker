@@ -123,7 +123,7 @@ export default function ReportsPage() {
   const { label } = startEndFor(date, mode);
 
   return (
-    <div style={{ padding: 16 }}>
+    <div className="max-w-4xl mx-auto px-4 py-6" style={{ padding: 16 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
         <h2 style={{ margin: 0 }}>Reports</h2>
 

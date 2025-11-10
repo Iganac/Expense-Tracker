@@ -1,4 +1,3 @@
-// src/components/ExpenseForm.jsx
 import { useState } from "react";
 import { useExpenses } from "../state/ExpensesContext";
 import Button from "./Button";

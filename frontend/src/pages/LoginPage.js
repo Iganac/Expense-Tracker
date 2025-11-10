@@ -20,49 +20,60 @@ export default function LoginPage() {
     setErr(""); setBusy(true);
     try {
       await login({ email, password });
-      const next = loc.state?.from || "/";
-      nav(next, { replace: true });
+      nav(loc.state?.from || "/", { replace: true });
     } catch (ex) {
-      setErr(ex?.message || "Invalid email or password.");
+      setErr("Invalid email or password.");
     } finally {
       setBusy(false);
     }
   };
 
+  const screenCenter = {
+    minHeight: "100vh",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "flex-start",
+    paddingTop: "12vh",
+    paddingLeft: 16,
+    paddingRight: 16
+  };
+
+  const formCol = { display: "flex", flexDirection: "column", gap: 14 };
+  const full = { width: "100%", boxSizing: "border-box" };
+
   return (
-    <div style={{ padding: 16, maxWidth: 420, margin: "40px auto" }}>
-      <Card>
-        <h2 style={{ marginTop: 0 }}>Login</h2>
+    <div className="max-w-4xl mx-auto px-4 py-6" style={screenCenter}>
+      <Card style={{ width: "100%", maxWidth: 420 }}>
+        <h2 style={{ margin: "0 0 12px" }}>Login</h2>
         <ErrorBanner msg={err} />
-        <form onSubmit={submit} style={{ display: "grid", gap: 10 }}>
-          <label>Email
-            <Input
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              type="email"
-              required
-            />
-          </label>
-          <label>Password
-            <Input
-              type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              placeholder="••••••••"
-              required
-              minLength={6}
-            />
-          </label>
-          <Button variant="primary" disabled={busy}>
+
+        <form onSubmit={submit} style={formCol}>
+          <Input
+            placeholder="Email"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            type="email"
+            required
+            style={full}
+          />
+
+          <Input
+            placeholder="Password"
+            type="password"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            required
+            minLength={6}
+            style={full}
+          />
+
+          <Button variant="primary" disabled={busy} style={full}>
             {busy ? "Signing in…" : "Login"}
           </Button>
         </form>
 
-        {/* --- Add this small footer --- */}
-        <div style={{ marginTop: 12, fontSize: 14 }}>
-          Don’t have an account?{" "}
-          <Link to="/register">Create one</Link>
+        <div style={{ marginTop: 14, fontSize: 14 }}>
+          Don't have an account? <Link to="/register">Register</Link>
         </div>
       </Card>
     </div>
