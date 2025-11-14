@@ -32,10 +32,6 @@ export default function ExpensesPage() {
     return arr;
   }, [expenses, categoryFilter]);
 
-  // ids for labels
-  const dateId = "filter-date";
-  const catId = "filter-category";
-
   return (
     <div className="page container" style={{ padding: 16 }}>
       {/* Toolbar */}

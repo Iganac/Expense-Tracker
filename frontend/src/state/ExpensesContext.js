@@ -101,13 +101,11 @@ export function ExpensesProvider({ children }) {
       }
     })();
     loadFirstPage();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   useEffect(() => {
     if (!user) return;
     loadFirstPage();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.selectedDate, user]);
 
   async function loadFirstPage() {
