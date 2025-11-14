@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useExpenses } from "../state/ExpensesContext";
 import ExpenseCard from "../components/ExpenseCard";
 import ExpenseForm from "../components/ExpenseForm";
@@ -10,16 +10,40 @@ import Input from "../components/Input";
 import Select from "../components/Select";
 import Button from "../components/Button";
 
+// Helper: get today's date in user's local timezone as YYYY-MM-DD
+function todayLocalISO() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 export default function ExpensesPage() {
   const {
-    expenses, categories,
-    loadingExpenses, loadingCategories,
-    errorExpenses, errorCategories,
-    saveExpense, removeExpense,
-    state, setSelectedDate, loadMore, hasNext, dayTotal,
+    expenses,
+    categories,
+    loadingExpenses,
+    loadingCategories,
+    errorExpenses,
+    errorCategories,
+    saveExpense,
+    removeExpense,
+    state,
+    setSelectedDate,
+    loadMore,
+    hasNext,
+    dayTotal,
   } = useExpenses();
 
   const [categoryFilter, setCategoryFilter] = useState("All");
+
+  // Ensure selectedDate is initialized to *user's local today* if missing
+  useEffect(() => {
+    if (!state.selectedDate) {
+      setSelectedDate(todayLocalISO());
+    }
+  }, [state.selectedDate, setSelectedDate]);
 
   const nameById = useMemo(
     () => new Map(categories.map((c) => [c.id, c.name])),
@@ -28,21 +52,32 @@ export default function ExpensesPage() {
 
   const filtered = useMemo(() => {
     let arr = expenses;
-    if (categoryFilter !== "All") arr = arr.filter((e) => e.categoryId === categoryFilter);
+    if (categoryFilter !== "All") {
+      arr = arr.filter((e) => e.categoryId === categoryFilter);
+    }
     return arr;
   }, [expenses, categoryFilter]);
 
   return (
     <div className="page container" style={{ padding: 16 }}>
       {/* Toolbar */}
-      <div className="exp-toolbar" style={{ display: "flex", flexWrap: "wrap", gap: "16px", alignItems: "center", marginBottom: "12px" }}>
+      <div
+        className="exp-toolbar"
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: "16px",
+          alignItems: "center",
+          marginBottom: "12px",
+        }}
+      >
         <h2 style={{ margin: 0 }}>Expenses</h2>
 
         <div style={{ display: "flex", flexDirection: "column" }}>
           <span>Date</span>
           <Input
             type="date"
-            value={state.selectedDate}
+            value={state.selectedDate || todayLocalISO()}
             onChange={(e) => setSelectedDate(e.target.value)}
             style={{ minWidth: 140 }}
           />
@@ -57,18 +92,26 @@ export default function ExpensesPage() {
           >
             <option value="All">All</option>
             {categories.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
             ))}
           </Select>
         </div>
 
-        <span style={{
-          marginLeft: "auto",
-          border: "1px solid #e5e7eb",
-          borderRadius: "999px",
-          padding: "4px 10px",
-        }}>
-          Total {new Intl.NumberFormat(undefined, { style: "currency", currency: "USD" }).format(dayTotal)}
+        <span
+          style={{
+            marginLeft: "auto",
+            border: "1px solid #e5e7eb",
+            borderRadius: "999px",
+            padding: "4px 10px",
+          }}
+        >
+          Total{" "}
+          {new Intl.NumberFormat(undefined, {
+            style: "currency",
+            currency: "USD",
+          }).format(dayTotal)}
         </span>
       </div>
 
@@ -81,7 +124,7 @@ export default function ExpensesPage() {
       {/* Quick add form */}
       <div style={{ marginTop: 12 }}>
         <ExpenseForm
-          date={state.selectedDate}
+          date={state.selectedDate || todayLocalISO()}
           categoryId={categoryFilter !== "All" ? categoryFilter : undefined}
         />
       </div>
@@ -89,24 +132,36 @@ export default function ExpensesPage() {
       {/* List */}
       <div className="exp-list" style={{ marginTop: 12 }}>
         {loadingExpenses && <Loading text="Loading expenses..." />}
-        {!loadingExpenses && !!errorExpenses && <ErrorBanner msg={errorExpenses} />}
-        {!loadingExpenses && !errorExpenses && filtered.length === 0 && (
-          <Empty text="No expenses yet for this date." />
+        {!loadingExpenses && !!errorExpenses && (
+          <ErrorBanner msg={errorExpenses} />
         )}
-        {!loadingExpenses && !errorExpenses && filtered.map((e) => (
-          <ExpenseCard
-            key={e.id}
-            expense={e}
-            onDelete={() => removeExpense(e.id)}
-            onSave={(updates) => saveExpense(e.id, updates)}
-            categoryName={nameById.get(e.categoryId) || "—"}
-            categories={categories}
-          />
-        ))}
+        {!loadingExpenses &&
+          !errorExpenses &&
+          filtered.length === 0 && (
+            <Empty text="No expenses yet for this date." />
+          )}
+        {!loadingExpenses &&
+          !errorExpenses &&
+          filtered.map((e) => (
+            <ExpenseCard
+              key={e.id}
+              expense={e}
+              onDelete={() => removeExpense(e.id)}
+              onSave={(updates) => saveExpense(e.id, updates)}
+              categoryName={nameById.get(e.categoryId) || "—"}
+              categories={categories}
+            />
+          ))}
       </div>
 
       {/* Pagination */}
-      <div style={{ marginTop: 12, display: "flex", justifyContent: "center" }}>
+      <div
+        style={{
+          marginTop: 12,
+          display: "flex",
+          justifyContent: "center",
+        }}
+      >
         <Button onClick={loadMore} disabled={!hasNext || loadingExpenses}>
           {loadingExpenses ? "Loading…" : hasNext ? "Load More" : "No More"}
         </Button>
