@@ -10,13 +10,23 @@ import { useAuth } from "./AuthContext";
 
 const ExpensesContext = createContext(null);
 
+// Helper: get today's date in user's local timezone as YYYY-MM-DD
+function todayLocalISO() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 const initialState = {
   categories: [],
   items: [],
   page: 0,
   size: 20,
   hasNext: false,
-  selectedDate: new Date().toISOString().slice(0, 10),
+  // Use local "today" instead of UTC toISOString()
+  selectedDate: todayLocalISO(),
   loadingCategories: true,
   loadingExpenses: true,
   errorCategories: null,
@@ -24,8 +34,11 @@ const initialState = {
 };
 
 function sortByDateDesc(list) {
-  return [...list].sort((a, b) => new Date(b.expenseDate) - new Date(a.expenseDate));
+  return [...list].sort(
+    (a, b) => new Date(b.expenseDate) - new Date(a.expenseDate)
+  );
 }
+
 function normalizeUpdates(updates) {
   const out = { ...updates };
   if (out.amount != null) out.amount = Number(Number(out.amount).toFixed(2));
@@ -37,10 +50,22 @@ function reducer(state, action) {
     case "SET_CATEGORIES":
       return { ...state, categories: action.payload };
     case "SET_DATE":
-      return { ...state, selectedDate: action.payload, items: [], page: 0, hasNext: false, errorExpenses: null };
+      return {
+        ...state,
+        selectedDate: action.payload,
+        items: [],
+        page: 0,
+        hasNext: false,
+        errorExpenses: null,
+      };
     case "APPEND_SLICE": {
       const { content, page, hasNext } = action.payload;
-      return { ...state, items: page === 0 ? content : [...state.items, ...content], page, hasNext };
+      return {
+        ...state,
+        items: page === 0 ? content : [...state.items, ...content],
+        page,
+        hasNext,
+      };
     }
     case "RESET_ITEMS":
       return { ...state, items: [], page: 0, hasNext: false };
@@ -53,12 +78,20 @@ function reducer(state, action) {
     case "ERROR_EXPENSES":
       return { ...state, errorExpenses: action.payload };
     case "REMOVE_EXPENSE":
-      return { ...state, items: state.items.filter(e => e.id !== action.payload) };
+      return {
+        ...state,
+        items: state.items.filter((e) => e.id !== action.payload),
+      };
     case "ADD_EXPENSE_OPT":
       return { ...state, items: [action.payload, ...state.items] };
     case "REPLACE_EXPENSE": {
       const { tempId, item } = action.payload;
-      return { ...state, items: state.items.map(e => (e.id === tempId ? { ...item, _optimistic: false } : e)) };
+      return {
+        ...state,
+        items: state.items.map((e) =>
+          e.id === tempId ? { ...item, _optimistic: false } : e
+        ),
+      };
     }
     case "SET_ITEMS":
       return { ...state, items: action.payload };
@@ -73,6 +106,8 @@ function reducer(state, action) {
         loadingExpenses: false,
         errorCategories: null,
         errorExpenses: null,
+        // Also reset selectedDate to local "today"
+        selectedDate: todayLocalISO(),
       };
     default:
       return state;
@@ -95,28 +130,48 @@ export function ExpensesProvider({ children }) {
         dispatch({ type: "SET_CATEGORIES", payload: cats });
         dispatch({ type: "ERROR_CATEGORIES", payload: null });
       } catch (e) {
-        dispatch({ type: "ERROR_CATEGORIES", payload: e?.message || "Failed to load categories" });
+        dispatch({
+          type: "ERROR_CATEGORIES",
+          payload: e?.message || "Failed to load categories",
+        });
       } finally {
         dispatch({ type: "LOADING_CATEGORIES", payload: false });
       }
     })();
     loadFirstPage();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   useEffect(() => {
     if (!user) return;
     loadFirstPage();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.selectedDate, user]);
 
   async function loadFirstPage() {
     dispatch({ type: "LOADING_EXPENSES", payload: true });
     try {
       const d = state.selectedDate;
-      const res = await searchExpensesApi({ start: d, end: d, page: 0, size: state.size });
-      dispatch({ type: "APPEND_SLICE", payload: { content: res.content || [], page: 0, hasNext: !res.last } });
+      const res = await searchExpensesApi({
+        start: d,
+        end: d,
+        page: 0,
+        size: state.size,
+      });
+      dispatch({
+        type: "APPEND_SLICE",
+        payload: {
+          content: res.content || [],
+          page: 0,
+          hasNext: !res.last,
+        },
+      });
       dispatch({ type: "ERROR_EXPENSES", payload: null });
     } catch (e) {
-      dispatch({ type: "ERROR_EXPENSES", payload: e?.message || "Failed to load expenses" });
+      dispatch({
+        type: "ERROR_EXPENSES",
+        payload: e?.message || "Failed to load expenses",
+      });
       dispatch({ type: "RESET_ITEMS" });
     } finally {
       dispatch({ type: "LOADING_EXPENSES", payload: false });
@@ -129,10 +184,25 @@ export function ExpensesProvider({ children }) {
     try {
       const next = state.page + 1;
       const d = state.selectedDate;
-      const res = await searchExpensesApi({ start: d, end: d, page: next, size: state.size });
-      dispatch({ type: "APPEND_SLICE", payload: { content: res.content || [], page: next, hasNext: !res.last } });
+      const res = await searchExpensesApi({
+        start: d,
+        end: d,
+        page: next,
+        size: state.size,
+      });
+      dispatch({
+        type: "APPEND_SLICE",
+        payload: {
+          content: res.content || [],
+          page: next,
+          hasNext: !res.last,
+        },
+      });
     } catch (e) {
-      dispatch({ type: "ERROR_EXPENSES", payload: e?.message || "Failed to load more expenses" });
+      dispatch({
+        type: "ERROR_EXPENSES",
+        payload: e?.message || "Failed to load more expenses",
+      });
     } finally {
       dispatch({ type: "LOADING_EXPENSES", payload: false });
     }
@@ -144,7 +214,9 @@ export function ExpensesProvider({ children }) {
 
   async function createExpense(expense) {
     if (!user) throw new Error("Not authenticated");
-    const tempId = `temp-${globalThis.crypto?.randomUUID?.() || Date.now()}`;
+    const tempId = `temp-${
+      globalThis.crypto?.randomUUID?.() || Date.now()
+    }`;
     const optimistic = {
       id: tempId,
       notes: expense.notes || "",
@@ -164,7 +236,10 @@ export function ExpensesProvider({ children }) {
         expenseDate: optimistic.expenseDate,
       });
       if (optimistic.expenseDate === state.selectedDate) {
-        dispatch({ type: "REPLACE_EXPENSE", payload: { tempId, item: created } });
+        dispatch({
+          type: "REPLACE_EXPENSE",
+          payload: { tempId, item: created },
+        });
       }
       await loadFirstPage();
     } catch (e) {
@@ -178,12 +253,15 @@ export function ExpensesProvider({ children }) {
   async function saveExpense(id, updates) {
     if (!user) throw new Error("Not authenticated");
     const snapshot = state.items;
-    const idx = snapshot.findIndex(e => e.id === id);
+    const idx = snapshot.findIndex((e) => e.id === id);
     if (idx !== -1) {
       const optimistic = { ...snapshot[idx], ...updates };
       const optimisticList = [...snapshot];
       optimisticList[idx] = optimistic;
-      dispatch({ type: "SET_ITEMS", payload: sortByDateDesc(optimisticList) });
+      dispatch({
+        type: "SET_ITEMS",
+        payload: sortByDateDesc(optimisticList),
+      });
     }
     try {
       await updateExpenseApi(id, normalizeUpdates(updates));
@@ -232,7 +310,11 @@ export function ExpensesProvider({ children }) {
     [state, dayTotal]
   );
 
-  return <ExpensesContext.Provider value={value}>{children}</ExpensesContext.Provider>;
+  return (
+    <ExpensesContext.Provider value={value}>
+      {children}
+    </ExpensesContext.Provider>
+  );
 }
 
 export function useExpenses() {
